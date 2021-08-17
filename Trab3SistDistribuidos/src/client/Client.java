@@ -1,5 +1,6 @@
 package client;
 
+
 import causalMulticast.*;
 
 public class Client implements ICausalMulticast{
@@ -8,6 +9,7 @@ public class Client implements ICausalMulticast{
 	
 	public static void main(String[] args) {
 		Client client = new Client();
+		
 	}
 	
 	public Client() {
