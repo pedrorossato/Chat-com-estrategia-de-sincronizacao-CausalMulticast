@@ -1,0 +1,2 @@
+module trab3SistDistribuidosModuleInfo {
+}
