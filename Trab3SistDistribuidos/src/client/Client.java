@@ -14,7 +14,9 @@ public class Client implements ICausalMulticast{
 	public static void main(String[] args) {
 		try {
 			Client client = new Client();
-			client.sendMessage("teste");
+			while(true) {
+				client.sendMessage();				
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -25,8 +27,12 @@ public class Client implements ICausalMulticast{
 	public Client() {
 		causalMulticastAPI = new CausalMulticastAPI();
 	}
-	public void sendMessage(String msg) {
-		causalMulticastAPI.mcsend(msg, this);
+	
+	public void sendMessage() throws IOException {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		System.out.println("Digite uma mensagem para enviar:");
+		String mensagem = reader.readLine();
+		causalMulticastAPI.mcsend(mensagem, this);
 	}
 	
 	@Override

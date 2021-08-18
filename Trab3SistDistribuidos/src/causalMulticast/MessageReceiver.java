@@ -28,7 +28,11 @@ public class MessageReceiver extends Thread {
 		        ByteArrayInputStream byteArrayinputStream = new ByteArrayInputStream(data);
 		        ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayinputStream);
 		        receivedMessage = (Message) objectInputStream.readObject();
-		        System.out.println("Msg recebida de ("+ receivedMessage.ClientPort+") : " + receivedMessage.msg);
+		        causalMulticastAPI.receiveMessage(receivedMessage);
+//		        causalMulticastAPI.vectorClock.put(receivedMessage.ClientPort, causalMulticastAPI.vectorClock.get(receivedMessage.ClientPort)+1);
+//		        System.out.println("Msg recebida de ("+ receivedMessage.ClientPort+") : " + receivedMessage.msg);
+//		        System.out.println("vetor ("+receivedMessage.ClientPort+","+causalMulticastAPI.vectorClock.get(receivedMessage.ClientPort)+")");
+		        
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
