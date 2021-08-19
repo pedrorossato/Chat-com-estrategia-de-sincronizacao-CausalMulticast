@@ -11,11 +11,31 @@ import java.util.Map;
 import message.Message;
 
 
+/** Class que representa o receptor de mensagens unicast de outros middlewares
+ * @author Pedro H. V. Rossato e Gabriel Fuhr
+ *
+ */
 public class MessageReceiver extends Thread {
+	
+	/** Middleware associado ao receptor de mensagens
+	 * 
+	 */
 	private CausalMulticastAPI causalMulticastAPI;
+	/** Vetore de relógios lógicos associado ao receptor de mensagens
+	 * 
+	 */
 	public  Map<Integer,Integer> vectorClock;
+	/** Mensagem recebida (Objeto)
+	 * 
+	 */
 	private Message receivedMessage;
+	/** Mensagem recebida (byte array)
+	 * 
+	 */
 	byte[] receivedMessageByteArray = new byte[1000];
+	/** Mensagens que serão entregues atrasadas pois há dependencia de uma mensagem que ainda não chegou
+	 * 
+	 */
 	public ArrayList<Message> delayedMessages;
 	
 	public MessageReceiver(CausalMulticastAPI causalMulticastAPI) {
@@ -24,6 +44,9 @@ public class MessageReceiver extends Thread {
 		this.delayedMessages = new ArrayList<Message>();
 	}
 	
+	/** Método que recebe mensagens ciclicamente
+	 *	
+	 */
 	@Override
 	public void run() {
 		synchronized (this) {
@@ -38,17 +61,7 @@ public class MessageReceiver extends Thread {
 					ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayinputStream);
 					receivedMessage = (Message) objectInputStream.readObject();
 					printMessageAndReceiverClockVectors();
-					Boolean entregar = true;
-					for (Map.Entry<Integer, Integer> entry : vectorClock.entrySet()) {
-						int key = entry.getKey();
-						int value = entry.getValue();
-						if(value < receivedMessage.vectorClock.get(key)) {
-							delayedMessages.add(receivedMessage);
-							System.out.println("A mensagem "+receivedMessage.msg+" está esperando para ser entregue");
-							entregar = false;
-							break;
-						}
-					}
+					Boolean entregar = addMessageToDelayedMessagesIfHasDependency();
 					deliverDelayedMessages();			
 					if(entregar) {
 						deliverMessage();
@@ -61,12 +74,30 @@ public class MessageReceiver extends Thread {
 		}
 	}
 
+	/** Método que checar se o vetor de relogios está adiantado em relação ao do middleware
+	 * @return True se a mensagem deve ser entregue, ou seja, não depende de outra mensagem anterior
+	 */
+	private Boolean addMessageToDelayedMessagesIfHasDependency() {
+		Boolean entregar = true;
+		for (Map.Entry<Integer, Integer> entry : vectorClock.entrySet()) {
+			int key = entry.getKey();
+			int value = entry.getValue();
+			if(value < receivedMessage.vectorClock.get(key)) {
+				delayedMessages.add(receivedMessage);
+				System.out.println("A mensagem "+receivedMessage.msg+" está esperando para ser entregue");
+				entregar = false;
+				break;
+			}
+		}
+		return entregar;
+	}
+
 	/** Entrega a mensagem recebida
 	 * 
 	 */
 	private void deliverMessage() {
 		vectorClock.put(receivedMessage.ClientPort, vectorClock.get(receivedMessage.ClientPort)+1);
-		System.out.println("msg : " + receivedMessage.msg);
+		System.out.println("Recebi a mensagem: " + receivedMessage.msg);
 	}
 
 	/** Método para printar no console os clock vectors do receiver do middleware e da mensagem recebida
@@ -108,7 +139,7 @@ public class MessageReceiver extends Thread {
 				}
 			}
 			for(Message mensagemASerEntregue : mensagensASerEntregue) {
-				System.out.println("msg : "+ mensagemASerEntregue.msg);
+				System.out.println("Recebi a mensagem: "+ mensagemASerEntregue.msg);
 				delayedMessages.remove(mensagemASerEntregue);
 			}
 			mensagensASerEntregue.clear();

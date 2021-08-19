@@ -10,15 +10,43 @@ import java.util.Map;
 import client.Client;
 import message.Message;
 
+/** Classe que representa o middleware que entrega mensagens em ordem causal
+ * @author Pedro H. V. Rossato e Gabriel Fuhr
+ *
+ */
 public class CausalMulticastAPI implements ICausalMulticastAPI {
 	
+	/** Receptor de mensagens da API
+	 * 
+	 */
 	private MessageReceiver messageReceiver;
+	/** Grupo de clientes, representados pela porta do socket
+	 * 
+	 */
 	private ArrayList<Integer> grupo;
+	/** Socket utilizado pelo serviço de descobrimento multicast
+	 * 
+	 */
 	private MulticastSocket multicastSocket ;
+	/** Socket unicast utilizado para enviar e receber mensagens
+	 * 
+	 */
 	public DatagramSocket unicastSocket;
+	/** Endereço multicast para o grupo
+	 * 
+	 */
 	private static InetAddress multicastAdress;
+	/** Porta multicast para o grupo
+	 * 
+	 */
 	private static int MulticastPort = 6789;
+	/** Endereço localhost utilziado para transimissao unicast
+	 * 
+	 */
 	private InetAddress LocalHost;
+	/** Porta do socket unicast do cliente
+	 * 
+	 */
 	public int ClientPort;
 	
 	
@@ -37,6 +65,9 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 
 	}
 
+	/** Método que pergunta ao usuario qual porta o seu cliente quer utilizar
+	 * @throws IOException
+	 */
 	private void getClientAddress() throws IOException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Digite a porta referente ao cliente: <porta>");
@@ -44,10 +75,14 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 		ClientPort = Integer.parseInt(IPePORTA) ;
 		messageReceiver.vectorClock.put(ClientPort, 0);
 	}
-	
 
+	
+	/** Método que descobre outros clientes até completar 3 clientes no grupo
+	 * @throws IOException Exceção causada pelos sockets por: não encontrar o grupo, ou um erro I/0 do socket
+	 * @throws InterruptedException Caso a thread seja interrompida por outra thread
+	 */
 	@SuppressWarnings("deprecation")
-	private void discoverService() throws UnknownHostException, SocketException, IOException, InterruptedException {
+	private void discoverService() throws IOException, InterruptedException {
 		System.out.println("Descobrindo grupo...");
 		grupo = new ArrayList<Integer>();
 		multicastSocket.joinGroup(multicastAdress);
@@ -74,6 +109,10 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 	}
 	
 	
+	/** Método ultizado para enviar uma mensagem ao grupo
+	 *	@param msg Mensagem a ser entregue
+	 *  @param client Intancia do cliente que será usada para enviar a mensagem a si mesmo por callback
+	 */
 	@Override
 	public void mcsend(String msg, Client client) {
 		try {
@@ -91,7 +130,7 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 					System.out.println("Deseja enviar a mensagem " + msg + " para o membro "+ membro+ " ? (s/n)");
 					enviar = reader.readLine();
 				}
-				if(enviarParaTodos.equals("s")|| enviar.equals("s") || enviar == null) {
+				if(enviarParaTodos.equals("s") || enviar.equals("s") || enviar == null) {
 					message = new Message(ClientPort,msg,vectorClockCopy);
 					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 					ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);

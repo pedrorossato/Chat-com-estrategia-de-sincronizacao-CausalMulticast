@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes","u":"allclasses-index.html"},{"p":"causalMulticast","l":"CausalMulticastAPI"},{"p":"client","l":"Client"},{"p":"causalMulticast","l":"ICausalMulticast"},{"p":"causalMulticast","l":"ICausalMulticastAPI"},{"p":"message","l":"Message"},{"p":"causalMulticast","l":"MessageReceiver"}];updateSearchResults();
