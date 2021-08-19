@@ -30,14 +30,13 @@ public class Client implements ICausalMulticast{
 	
 	public void sendMessage() throws IOException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-		System.out.println("Digite uma mensagem para enviar:");
 		String mensagem = reader.readLine();
 		causalMulticastAPI.mcsend(mensagem, this);
 	}
 	
 	@Override
 	public void deliver(String msg) {
-		System.out.println("Recebi minha própria mensagem enviada: "+ msg);
+		System.out.println("Recebi a mensagem "+ msg);
 	}
 
 }

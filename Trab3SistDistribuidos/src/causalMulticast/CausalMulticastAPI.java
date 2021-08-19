@@ -4,8 +4,6 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 import client.Client;
 import message.Message;
@@ -14,14 +12,12 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 	
 	private MessageReceiver messageReceiver;
 	private ArrayList<Integer> grupo;
-	public  Map<Integer,Integer> vectorClock;
 	private MulticastSocket multicastSocket ;
 	public DatagramSocket unicastSocket;
 	private static InetAddress multicastAdress;
 	private static int MulticastPort = 6789;
 	private InetAddress LocalHost;
 	public int ClientPort;
-	public ArrayList<Message> delayedMessages;
 	
 	
 	public CausalMulticastAPI(){	
@@ -29,11 +25,9 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 			LocalHost = InetAddress.getLocalHost();
 			multicastAdress = InetAddress.getByName("225.0.0.0");
 			multicastSocket = new MulticastSocket(MulticastPort);
-			vectorClock = new HashMap<Integer, Integer>();
-			delayedMessages = new ArrayList<Message>();
+			messageReceiver = new MessageReceiver(this);
 			getClientAddress();
 			discoverService();
-			messageReceiver = new MessageReceiver(this);
 			messageReceiver.start();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -46,7 +40,7 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 		System.out.println("Digite a porta referente ao cliente: <porta>");
 		String IPePORTA = reader.readLine();
 		ClientPort = Integer.parseInt(IPePORTA) ;
-		vectorClock.put(ClientPort, 0);
+		messageReceiver.vectorClock.put(ClientPort, 0);
 	}
 	
 
@@ -67,7 +61,7 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 			int portrecv = Integer.parseInt(received.trim());
 			if(!grupo.contains(portrecv)  && portrecv != ClientPort) {
 				grupo.add(portrecv);
-				vectorClock.put(portrecv, 0);
+				messageReceiver.vectorClock.put(portrecv, 0);
 				recebidos++;
 			}
 			multicastSocket.send(ping);
@@ -76,33 +70,33 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 			Thread.sleep(1000);
 		}
 	}
-	 
-	public void receiveMessage(Message receivedMessage) {
-		for (Map.Entry<Integer, Integer> entry : vectorClock.entrySet()) {
-		    int key = entry.getKey();
-		    int value = entry.getValue();
-		    if(value < receivedMessage.vectorClock.get(key)) {
-		    	delayedMessages.add(receivedMessage);
-		    }
-		    //TODO: Entregar mensagem atrasada depois que chegar a nova
-		}
-	}
+	
 	
 	@Override
 	public void mcsend(String msg, Client client) {
-		System.out.println("mandando:" + msg);
-		client.deliver(msg);
 		try {
+			System.out.println("Deseja enviar a mensagem " + msg + " a todos? (s/n)");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+			String enviarParaTodos = reader.readLine();
+			client.deliver(msg);
 			Message message;
 			for (Integer membro: grupo) {
-				message = new Message(ClientPort,msg,vectorClock);
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				ObjectOutputStream oos = new ObjectOutputStream(baos);
-				oos.writeObject(message);
-				byte[] data = baos.toByteArray();
-				DatagramPacket sendPacket = new DatagramPacket(data, data.length,LocalHost, membro);
-				unicastSocket.send(sendPacket);
+				String enviar = null;
+				if(enviarParaTodos.equals("n")) {
+					System.out.println("Deseja enviar a mensagem " + msg + " para o membro "+ membro+ " ? (s/n)");
+					enviar = reader.readLine();
+				}
+				if(enviarParaTodos.equals("s")|| enviar.equals("s") || enviar == null) {
+					message = new Message(ClientPort,msg,messageReceiver.vectorClock);
+					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+					ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+					objectOutputStream.writeObject(message);
+					byte[] data = byteArrayOutputStream.toByteArray();
+					DatagramPacket sendPacket = new DatagramPacket(data, data.length,LocalHost, membro);
+					unicastSocket.send(sendPacket);
+				}
 			}
+			messageReceiver.vectorClock.put(ClientPort, messageReceiver.vectorClock.get(ClientPort)+1);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
