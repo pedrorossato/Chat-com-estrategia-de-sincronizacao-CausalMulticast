@@ -92,21 +92,26 @@ public class MessageReceiver extends Thread {
 	 */
 	private void deliverDelayedMessages() {
 		synchronized (this) {
+			Boolean entregar = true;
+			ArrayList<Message> mensagensASerEntregue = new ArrayList<Message>();
 			for(Message mensagemAtrasada : delayedMessages) {
-				Boolean entregarAtrasada = true;
 				for (Map.Entry<Integer, Integer> entry : mensagemAtrasada.vectorClock.entrySet()) {
 					int key = entry.getKey();
 					int value = entry.getValue();
 					if(value > vectorClock.get(key)) {
-						entregarAtrasada = false;
+						entregar = false;
 						break;
 					}
 				}
-				if(entregarAtrasada) {
-					System.out.println("msg atrasada sendo entregue : " + mensagemAtrasada.msg);
-					delayedMessages.remove(mensagemAtrasada);
-				}			
+				if(entregar) {
+					mensagensASerEntregue.add(mensagemAtrasada);
+				}
 			}
+			for(Message mensagemASerEntregue : mensagensASerEntregue) {
+				System.out.println("msg : "+ mensagemASerEntregue.msg);
+				delayedMessages.remove(mensagemASerEntregue);
+			}
+			mensagensASerEntregue.clear();
 		}
 	}
 }

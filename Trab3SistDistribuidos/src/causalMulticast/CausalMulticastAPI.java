@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import client.Client;
 import message.Message;
@@ -79,6 +81,9 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 			String enviarParaTodos = reader.readLine();
 			client.deliver(msg);
+			Map<Integer,Integer> vectorClockCopy = new HashMap<Integer,Integer>();
+			messageReceiver.vectorClock.forEach(vectorClockCopy::put);
+			messageReceiver.vectorClock.put(ClientPort, messageReceiver.vectorClock.get(ClientPort)+1);
 			Message message;
 			for (Integer membro: grupo) {
 				String enviar = null;
@@ -87,7 +92,7 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 					enviar = reader.readLine();
 				}
 				if(enviarParaTodos.equals("s")|| enviar.equals("s") || enviar == null) {
-					message = new Message(ClientPort,msg,messageReceiver.vectorClock);
+					message = new Message(ClientPort,msg,vectorClockCopy);
 					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 					ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
 					objectOutputStream.writeObject(message);
@@ -96,7 +101,7 @@ public class CausalMulticastAPI implements ICausalMulticastAPI {
 					unicastSocket.send(sendPacket);
 				}
 			}
-			messageReceiver.vectorClock.put(ClientPort, messageReceiver.vectorClock.get(ClientPort)+1);
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
